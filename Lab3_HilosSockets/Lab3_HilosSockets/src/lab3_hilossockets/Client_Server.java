@@ -10,6 +10,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLServerSocket;
+import lab3_hilossockets.SortState;
 
 public class Client_Server {
 
@@ -81,40 +82,35 @@ public class Client_Server {
     }
 
     private static void handleWorker(Socket socket, int workerId) {
-        try (ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream()); ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
+        try (ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+             ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
 
-            while (!sorted) {
-                // Enviar datos al worker
-                out.writeInt(opcion);
-                out.writeFloat(timeLimit * 1000); // Tiempo límite en milisegundos
-                out.writeObject(vector);
+            SortState state = new SortState(vector, 0, vector.size() - 1, 0);
+            boolean workerFinished = false;
+
+            while (!workerFinished) {
+                out.writeObject(state);
+                out.writeFloat(timeLimit); // Tiempo límite
                 out.flush();
 
-                // Recibir datos del worker
-                vector = (List<Long>) in.readObject();
-                sorted = isSorted(vector);
-                elapsedTime = in.readLong();
-                totalTime += elapsedTime;
+                // Espera la respuesta del worker
+                state = (SortState) in.readObject();
 
-                // Log de progreso
-                System.out.println("Worker_" + workerId + " procesando...");
-                System.out.println("Tiempo tomado por Worker_" + workerId + ": " + elapsedTime + " ms");
+                // Verifica si el worker ha terminado
+                if (state.progress == -1) {
+                    workerFinished = true;
+                    System.out.println("Worker_" + workerId + " finalizó el procesamiento.");
+                    System.out.println("Vector ordenado: " + state.vector);
+                } else {
+                    System.out.println("Worker_" + workerId + " procesando...");
+                }
             }
-
-            System.out.println("Worker_" + workerId + " finalizó el procesamiento.");
-            System.out.println("Vector ordenado: " + vector);
-            System.out.println("Tiempo total tomado: " + totalTime + " ms");
-
         } catch (Exception e) {
             System.err.println("Error procesando datos con Worker_" + workerId + ": " + e.getMessage());
-        } finally {
-            try {
-                socket.close();
-            } catch (IOException e) {
-                System.err.println("Error cerrando socket de Worker_" + workerId + ": " + e.getMessage());
-            }
         }
     }
+
+
 
     public static void llenarVector() throws FileNotFoundException {
         vector = new ArrayList<>();
