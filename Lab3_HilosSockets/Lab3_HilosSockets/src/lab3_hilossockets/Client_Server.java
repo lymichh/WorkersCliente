@@ -13,7 +13,7 @@ import javax.net.ssl.SSLServerSocket;
 import lab3_hilossockets.SortState;
 
 public class Client_Server {
-
+    
     public static Scanner scanner = new Scanner(System.in);
     public static List<Long> vector;
     public static int opcion;
@@ -28,7 +28,9 @@ public class Client_Server {
     public static final int MAX_WORKERS = Config.SERVER_MAX_WORKERS;
 
     public static void main(String[] args) throws FileNotFoundException {
+        //Info necesaria del cliente(Tiempo y metodo)
         Cliente();
+        //Servidor y workers
         Server();
     }
 
